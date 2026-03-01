@@ -82,17 +82,21 @@ def led_brightness_paths(mac: str) -> list[str]:
     return sorted(str(p / 'brightness') for p in hid_dir.glob('leds/*:blue:p?'))
 
 
-def set_leds(mac: str, pattern: int):
+def set_leds(mac: str, pattern: int) -> bool:
     """
     Set LEDs for a Wiimote. pattern is a bitmask: bit 0 = LED1 … bit 3 = LED4.
     E.g. pattern=0b0001 -> LED1 on only (player 1).
          pattern=0      -> all off.
+    Returns True if at least one brightness file was written successfully.
     """
+    wrote = False
     for i, path in enumerate(led_brightness_paths(mac)):
         try:
             pathlib.Path(path).write_text('1' if (pattern >> i) & 1 else '0')
+            wrote = True
         except OSError:
             pass
+    return wrote
 
 
 def read_battery(mac: str) -> int | None:
@@ -225,11 +229,11 @@ class WiimoteManager:
             self._player_order.append(path)
         player_num = self._player_order.index(path)
         pattern = PLAYER_LED_PATTERNS[min(player_num, len(PLAYER_LED_PATTERNS) - 1)]
-        if led_brightness_paths(mac):
-            log.debug('%s -> player %d, LED pattern 0b%04b', mac, player_num + 1, pattern)
-            set_leds(mac, pattern)
+        log.debug('%s -> player %d, LED pattern 0b%04b', mac, player_num + 1, pattern)
+        if set_leds(mac, pattern):
+            log.debug('LEDs set for %s', mac)
         elif retries > 0:
-            log.debug('sysfs LEDs not ready for %s, retrying (%d left)', mac, retries)
+            log.debug('LED write failed for %s, retrying (%d left)', mac, retries)
             GLib.timeout_add(500, self._assign_player_leds, path, mac, retries - 1)
 
     # ---- Adapter -----------------------------------------------------------
