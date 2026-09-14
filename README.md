@@ -2,6 +2,8 @@
 
 Linux Wiimote manager leveraging the hid-wiimote kernel driver, with automatic pairing, player-LED assignment, and a GTK3 system tray interface.
 
+This was created as an example and experiment for using Claude to generate a small purpose built tool. Scratch an itch.
+
 ![Screenshot placeholder](docs/wiimote_tray.png)
 
 ---
